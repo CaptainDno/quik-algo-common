@@ -5,6 +5,16 @@ function order_manager:init(robot_number, robot_name)
     self.client_code = "quik/"..robot_name
 end
 
+function order_manager:set_defaults(account, sec_class, sec_code)
+    self.default_account = account
+    self.default_sec_class = sec_class
+    self.default_sec_code = sec_code
+end
+
+function order_manager:place_limit_order_default(qty, price)
+    self:place_limit_order(self.default_account, self.default_sec_class, self.default_sec_code, qty, price)
+end
+
 function order_manager:place_limit_order(account, security_class, security, quantity, price)
 
     -- Determine operation type
@@ -40,6 +50,18 @@ function order_manager:place_limit_order(account, security_class, security, quan
         message("failed to send order "..error_t, 3)
     else
         message("order sent")
+    end
+end
+
+-- Designed to be used inside OnOrder callback
+-- Calls provided function when order created by this manager is fulfilled
+function order_manager:on_fulfillment(order, cb) 
+    -- Check if order comes from this order manager
+    if order.brokerref == self.client_code then
+        -- Check if order is fulfilled
+        if order.flags & 0x1 == 0 and order.flags & 0x2 == 0 then
+            cb(order)
+        end
     end
 end
 
